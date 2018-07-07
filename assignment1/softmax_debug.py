@@ -13,7 +13,7 @@ def get_CIFAR10_data(num_training=49000, num_validation=1000, num_test=1000, num
     """
     # Load the raw CIFAR-10 data
     # cifar10_dir = 'cs231n/datasets/cifar-10-batches-py'
-    cifar10_dir = '/home/antti/Desktop/studying/cs231/assignment1/cs231n/datasets/cifar-10-batches-py'
+    cifar10_dir = '/home/antti/studying/cs231n/assignment1/cs231n/datasets/cifar-10-batches-py/'
     X_train, y_train, X_test, y_test = load_CIFAR10(cifar10_dir)
 
     # subsample the data
@@ -104,3 +104,26 @@ grad_numerical = grad_check_sparse(f, W, grad, 10)
 loss, grad = softmax_loss_naive(W, X_dev, y_dev, 5e1)
 f = lambda w: softmax_loss_naive(w, X_dev, y_dev, 5e1)[0]
 grad_numerical = grad_check_sparse(f, W, grad, 10)
+
+
+
+
+
+
+
+tic = time.time()
+loss_naive, grad_naive = softmax_loss_naive(W, X_dev, y_dev, 0.000005)
+toc = time.time()
+print('naive loss: %e computed in %fs' % (loss_naive, toc - tic))
+
+from cs231n.classifiers.softmax import softmax_loss_vectorized
+tic = time.time()
+loss_vectorized, grad_vectorized = softmax_loss_vectorized(W, X_dev, y_dev, 0.000005)
+toc = time.time()
+print('vectorized loss: %e computed in %fs' % (loss_vectorized, toc - tic))
+
+# As we did for the SVM, we use the Frobenius norm to compare the two versions
+# of the gradient.
+grad_difference = np.linalg.norm(grad_naive - grad_vectorized, ord='fro')
+print('Loss difference: %f' % np.abs(loss_naive - loss_vectorized))
+print('Gradient difference: %f' % grad_difference)

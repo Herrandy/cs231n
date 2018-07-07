@@ -73,7 +73,33 @@ def softmax_loss_vectorized(W, X, y, reg):
   # here, it is easy to run into numeric instability. Don't forget the        #
   # regularization!                                                           #
   #############################################################################
-  pass
+  num_classes = W.shape[1]
+  dW = np.zeros_like(W)
+  F = X.dot(W)
+  F -= np.array([np.max(F, axis=1)] * num_classes).transpose()
+  f_corr = F[xrange(F.shape[0]), y]
+  f_exp = np.exp(F)
+  f_sum_exp = np.sum(f_exp, axis=1)
+
+  ### loss function
+  loss = -1 * f_corr + np.log(f_sum_exp)
+  loss /= X.shape[0]
+  loss += reg * np.sum(W * W)
+  loss = sum(loss)
+
+  # dw_corr_class =  (((np.exp(f_corr) / f_sum_exp) - 1.0 * np.ones(f_corr.shape[0])) * X.transpose())
+
+  ### gradient
+  # case y != k
+  dW_temp = f_exp / (f_sum_exp.reshape(f_sum_exp.shape[0], 1))
+  # case y == k
+  dW_temp[range(dW_temp.shape[0]), y] = ((np.exp(f_corr) / f_sum_exp) - 1.0)
+  dW = np.dot(X.transpose(), dW_temp)
+  dW /= X.shape[0]
+  dW += 2 * reg * W
+
+
+
   #############################################################################
   #                          END OF YOUR CODE                                 #
   #############################################################################
