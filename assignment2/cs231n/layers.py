@@ -192,7 +192,18 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # Referencing the original paper (https://arxiv.org/abs/1502.03167)   #
         # might prove to be helpful.                                          #
         #######################################################################
-        pass
+        '''
+        running_mean = momentum * running_mean + (1 - momentum) * sample_mean
+        running_var = momentum * running_var + (1 - momentum) * sample_var
+        '''
+        batch_mean = np.mean(x, axis=0)
+        batch_var = np.var(x, axis=0)
+        running_mean = momentum * running_mean + (1 - momentum) * batch_mean
+        running_var = momentum * running_var + (1 - momentum) * batch_var
+        x_hat = (x - batch_mean) / (np.sqrt(batch_var + eps))
+        out = gamma * x_hat + beta
+
+        cache = (x_hat, batch_mean, batch_var, eps, gamma, beta, x)
         #######################################################################
         #                           END OF YOUR CODE                          #
         #######################################################################
@@ -203,7 +214,8 @@ def batchnorm_forward(x, gamma, beta, bn_param):
         # then scale and shift the normalized data using gamma and beta.      #
         # Store the result in the out variable.                               #
         #######################################################################
-        pass
+        x_hat = (x - running_mean) / (np.sqrt(running_var + eps))
+        out = gamma * x_hat + beta
         #######################################################################
         #                          END OF YOUR CODE                           #
         #######################################################################
@@ -241,7 +253,26 @@ def batchnorm_backward(dout, cache):
     # Referencing the original paper (https://arxiv.org/abs/1502.03167)       #
     # might prove to be helpful.                                              #
     ###########################################################################
-    pass
+    # https://kratzert.github.io/2016/02/12/understanding-the-gradient-flow-through-the-batch-normalization-layer.html
+    x_hat, batch_mean, batch_var, eps, gamma, beta, x = cache
+    N, D = x.shape
+
+    dbeta = np.sum(dout, axis=0) # sum because we are calculating the gradient over a mini-batch
+    dgamma = np.sum(dout * x_hat, axis=0)
+
+    # gradient of respect to x
+    dx_hat = gamma * dout
+    dnumerator = dx_hat * (1 / (np.sqrt(batch_var + eps)))
+    dnominator = np.sum((x - batch_mean) * dx_hat, axis=0)  # nominator has 5x1 shape during forward pass
+    dsqrtvar = dnominator * (-1 / (eps + batch_var))
+    dvar = 0.5 * (1 / np.sqrt(batch_var + eps)) * dsqrtvar
+    dsq = np.ones(shape=(N, D)) * 1 / N * dvar
+    dxu = 2 * (x - batch_mean) * dsq
+    dmu = -1 * np.sum(dnumerator + dxu, axis=0)
+    dx2 = (1 / N) * np.ones(shape=(N, D)) * dmu
+    dx1 = dnumerator + dxu
+    dx = dx1 + dx2
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
