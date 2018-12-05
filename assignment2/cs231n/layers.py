@@ -657,6 +657,22 @@ def max_pool_backward_naive(dout, cache):
     # TODO: Implement the max-pooling backward pass                           #
     ###########################################################################
     pass
+    x, pool_params = cache
+    pool_height = pool_params['pool_height']
+    pool_width = pool_params['pool_width']
+    stride = pool_params['stride']
+    N, C, H_hat, W_hat = dout.shape
+    _, _, H, W = x.shape
+    dx = np.zeros(shape=x.shape)
+
+    for n in range(N):  # num of samples
+        for r in range(H_hat):
+            for c in range(W_hat):
+                for f in range(C):
+                    x_slice = x[n, f, stride * r:stride * r + pool_height, stride * c:stride * c + pool_width]
+                    max_id = np.unravel_index(np.argmax(x_slice, axis=None), x_slice.shape)
+                    dx[n, f, stride * r:stride * r + pool_height, stride * c:stride * c + pool_width][max_id] = dout[n, f, r, c]
+                    # x_slice[max_id]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -694,7 +710,9 @@ def spatial_batchnorm_forward(x, gamma, beta, bn_param):
     # vanilla version of batch normalization you implemented above.           #
     # Your implementation should be very short; ours is less than five lines. #
     ###########################################################################
-    pass
+    N, C, H, W = x.shape
+    batchnorm_forward()
+    # x_slice = x[n, f, stride * r:stride * r + pool_height, stride * c:stride * c + pool_width]
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################

@@ -69,7 +69,7 @@ print('dx error: ', rel_error(dx, dx_num))
 print('dw error: ', rel_error(dw, dw_num))
 print('db error: ', rel_error(db, db_num))
 '''
-
+'''
 x_shape = (2, 3, 4, 4)
 x = np.linspace(-0.3, 0.4, num=np.prod(x_shape)).reshape(x_shape)
 pool_param = {'pool_width': 2, 'pool_height': 2, 'stride': 2}
@@ -92,3 +92,62 @@ correct_out = np.array([[[[-0.26315789, -0.24842105],
 # Compare your output with ours. Difference should be on the order of e-8.
 print('Testing max_pool_forward_naive function:')
 print('difference: ', rel_error(out, correct_out))
+
+##### Naive backward
+np.random.seed(231)
+x = np.random.randn(3, 2, 8, 8)
+dout = np.random.randn(3, 2, 4, 4)
+pool_param = {'pool_height': 2, 'pool_width': 2, 'stride': 2}
+
+dx_num = eval_numerical_gradient_array(lambda x: max_pool_forward_naive(x, pool_param)[0], x, dout)
+
+out, cache = max_pool_forward_naive(x, pool_param)
+dx = max_pool_backward_naive(dout, cache)
+
+# Your error should be on the order of e-12
+print('Testing max_pool_backward_naive function:')
+print('dx error: ', rel_error(dx, dx_num))
+
+'''
+'''
+model = ThreeLayerConvNet()
+
+N = 50
+X = np.random.randn(N, 3, 32, 32)
+y = np.random.randint(10, size=N)
+
+loss, grads = model.loss(X, y)
+print('Initial loss (no regularization): ', loss)
+
+model.reg = 0.5
+loss, grads = model.loss(X, y)
+print('Initial loss (with regularization): ', loss)
+'''
+np.random.seed(231)
+# Check the training-time forward pass by checking means and variances
+# of features both before and after spatial batch normalization
+
+N, C, H, W = 2, 3, 4, 5
+x = 4 * np.random.randn(N, C, H, W) + 10
+
+print('Before spatial batch normalization:')
+print('  Shape: ', x.shape)
+print('  Means: ', x.mean(axis=(0, 2, 3)))
+print('  Stds: ', x.std(axis=(0, 2, 3)))
+
+# Means should be close to zero and stds close to one
+gamma, beta = np.ones(C), np.zeros(C)
+bn_param = {'mode': 'train'}
+out, _ = spatial_batchnorm_forward(x, gamma, beta, bn_param)
+print('After spatial batch normalization:')
+print('  Shape: ', out.shape)
+print('  Means: ', out.mean(axis=(0, 2, 3)))
+print('  Stds: ', out.std(axis=(0, 2, 3)))
+
+# Means should be close to beta and stds close to gamma
+gamma, beta = np.asarray([3, 4, 5]), np.asarray([6, 7, 8])
+out, _ = spatial_batchnorm_forward(x, gamma, beta, bn_param)
+print('After spatial batch normalization (nontrivial gamma, beta):')
+print('  Shape: ', out.shape)
+print('  Means: ', out.mean(axis=(0, 2, 3)))
+print('  Stds: ', out.std(axis=(0, 2, 3)))
