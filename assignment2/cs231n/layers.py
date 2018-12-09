@@ -788,7 +788,15 @@ def spatial_groupnorm_forward(x, gamma, beta, G, gn_param):
     # the bulk of the code is similar to both train-time batch normalization  #
     # and layer normalization!                                                # 
     ###########################################################################
-    pass
+    N, C, H, W = x.shape
+    data = x.reshape(N, G, C // G, H, W)
+    sample_mean = np.mean(data, axis=(2, 3, 4), keepdims=True)
+    sample_var = np.var(data, axis=(2, 3, 4), keepdims=True)
+    x_hat = (data - sample_mean) / (np.sqrt(sample_var + eps))
+    x_hat = x_hat.reshape(N, C, H, W)
+    out = gamma * x_hat + beta
+    cache = (x_hat, sample_mean, sample_var, eps, gamma, beta, x, G)
+
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
@@ -814,7 +822,31 @@ def spatial_groupnorm_backward(dout, cache):
     # TODO: Implement the backward pass for spatial group normalization.      #
     # This will be extremely similar to the layer norm implementation.        #
     ###########################################################################
-    pass
+    x_hat, layer_mean, layer_var, eps, gamma, beta, x, G = cache
+    N, C, H, W = x.shape
+    D = (C // G) * H * W
+    x = x.reshape(N, G, C // G, H, W)
+
+    dbeta = np.sum(dout, axis=(0, 2, 3))
+    dbeta = dbeta.reshape(1, C, 1, 1)
+
+    dgamma = np.sum(dout * x_hat, axis=(0, 2, 3))
+    dgamma = dgamma.reshape(1, C, 1, 1)
+
+    # gradient respect to x
+    dx_hat = gamma * dout
+    dx_hat = dx_hat.reshape(N, G, C // G, H, W)
+    dnumerator = dx_hat * (1 / (np.sqrt(layer_var + eps)))
+    dnominator = np.sum((x - layer_mean) * dx_hat, axis=(2, 3, 4), keepdims=True)
+    dsqrtvar = dnominator * (-1 / (eps + layer_var))
+    dvar = 0.5 * (1 / np.sqrt(layer_var + eps)) * dsqrtvar
+    dsq = (1 / D) * dvar
+    dxu = 2 * (x - layer_mean) * dsq
+    dmu = -1 * np.sum(dnumerator + dxu, axis=(2, 3, 4), keepdims=True)
+    dx2 = (1 / D) * dmu
+    dx1 = dnumerator + dxu
+    dx = dx1 + dx2
+    dx = dx.reshape(N, C, H, W)
     ###########################################################################
     #                             END OF YOUR CODE                            #
     ###########################################################################
